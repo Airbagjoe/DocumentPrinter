@@ -12,11 +12,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Windows.Forms;
 using System.IO;
 using DocumentPrinter.Properties;
 using MessageBox = System.Windows.Forms.MessageBox;
-
+using DocumentPrinter.Printers;
 
 namespace DocumentPrinter
 {
@@ -25,7 +24,6 @@ namespace DocumentPrinter
     /// </summary>
     public partial class MainWindow : Window
     {
-        private WordPrinter _wordPrinter;
 
         public MainWindow()
         {
@@ -34,7 +32,7 @@ namespace DocumentPrinter
 
         private void bFolder_Click(object sender, RoutedEventArgs e)
         {
-            var folderBrowser = new FolderBrowserDialog();
+            var folderBrowser = new System.Windows.Forms.FolderBrowserDialog();
             if (folderBrowser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 if (!Directory.Exists(folderBrowser.SelectedPath))
@@ -80,26 +78,41 @@ namespace DocumentPrinter
 
         private Task Print(string folder, IProgress<int> progres = null)
         {
+            var print = false;
+            var printerName = string.Empty;
+            using (var pDialog = new System.Windows.Forms.PrintDialog())
+            {
+                printerName = pDialog.PrinterSettings.PrinterName;
+                print = pDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK;
+            }
+
+            if (print != true)
+            {
+                return Task.FromResult(false);
+            }
+
             return Task.Run(() =>
             {
                 var directory = new DirectoryInfo(folder);
                 var files = directory.GetFiles();
-                var filtered = files.Where(f => (f.Attributes & FileAttributes.Hidden) == 0).Select(f => f).ToList();
+                var filtered = files.Where(f => (f.Attributes & FileAttributes.Hidden) == 0).ToList();
                 decimal i = 1;
                 foreach (var file in filtered)
                 {
-                    if (Settings.Default.AdobeExtensions.Contains(file.Extension,StringComparison.InvariantCultureIgnoreCase))
+                    BasePrinter printer = null;
+
+                    if (Settings.Default.AdobeExtensions.Contains(file.Extension, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        PDFPrinter.PrintPDF(file.FullName);
+                        printer = new PDFPrinter();
                     }
                     else if (Settings.Default.WordExtensions.Contains(file.Extension, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        if (_wordPrinter == null)
-                        {
-                            _wordPrinter = new WordPrinter();
-                        }
+                        printer = new WordPrinter();
+                    }
 
-                        _wordPrinter.PrintDocument(file.FullName);
+                    if (printer != null)
+                    {
+                        printer.Print(file.FullName, printerName);
                     }
 
                     if (progres != null)
@@ -110,14 +123,6 @@ namespace DocumentPrinter
                     i++;
                 }
             });
-        }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            if (_wordPrinter != null)
-            {
-                _wordPrinter.Quit();
-            }
         }
     }
 }
