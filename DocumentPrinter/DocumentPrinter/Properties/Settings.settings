@@ -1,0 +1,12 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DocumentPrinter.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="WordExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.docx, .odt</Value>
+    </Setting>
+    <Setting Name="AdobeExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.pdf</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
